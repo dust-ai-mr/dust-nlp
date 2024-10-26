@@ -58,7 +58,7 @@ public class ChatGptRequestResponseMsg extends GenericGptRequestResponseMsg
     public ChatGptRequestResponseMsg(String request) {
         super(request);
         systemPrompt = DEFAULT_SYSTEM_PROMPT;
-        model = GPT_3_5;
+        model = GPT_4o;
     }
     /**
      * Constructor
@@ -68,7 +68,7 @@ public class ChatGptRequestResponseMsg extends GenericGptRequestResponseMsg
     public ChatGptRequestResponseMsg(String request, int maxTokens) {
         super(request, maxTokens);
         systemPrompt = DEFAULT_SYSTEM_PROMPT;
-        model = GPT_3_5;
+        model = GPT_4o;
     }
     /**
      * Constructor
@@ -77,7 +77,7 @@ public class ChatGptRequestResponseMsg extends GenericGptRequestResponseMsg
      */
     public ChatGptRequestResponseMsg(String request, String systemPrompt) {
         super(request, systemPrompt);
-        model = GPT_3_5;
+        model = GPT_4o;
     }
     /**
      * Constructor
@@ -87,7 +87,7 @@ public class ChatGptRequestResponseMsg extends GenericGptRequestResponseMsg
      */
     public ChatGptRequestResponseMsg(String request, String systemPrompt, int maxTokens) {
         super(request, systemPrompt, maxTokens);
-        model = GPT_3_5;
+        model = GPT_4o;
     }
     /**
      * Constructor

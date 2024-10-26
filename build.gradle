@@ -21,7 +21,7 @@ plugins {
 }
 
 group 'com.mentalresonance'
-version '1.0.2'
+version '1.1.0'
 
 repositories {
     mavenLocal()
@@ -40,7 +40,6 @@ dependencies {
     testImplementation 'org.slf4j:slf4j-simple:2.0.7'
     testImplementation 'org.apache.groovy:groovy-all:4.0.12'
 
-    // implementation('com.rometools:rome:2.1.0')
     implementation 'com.google.code.gson:gson:2.10.1'
 
     implementation 'com.hexadevlabs:gpt4all-java-binding:1.1.5'
@@ -48,7 +47,6 @@ dependencies {
     api('com.mentalresonance:dust-core:1.0.2')
     api('com.mentalresonance:dust-http:1.0.2')
     api('com.mentalresonance:dust-html:1.0.2')
-    api('com.mentalresonance:dust-feeds:1.0.2')
     api('com.ibm.icu:icu4j:69.1')
     api('com.ibm.icu:icu4j-charset:69.1')
     api('com.ibm.icu:icu4j-localespi:69.1')
