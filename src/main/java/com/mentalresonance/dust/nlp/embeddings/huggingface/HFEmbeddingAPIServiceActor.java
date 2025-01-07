@@ -95,7 +95,7 @@ public class HFEmbeddingAPIServiceActor extends Actor implements HttpClientActor
 								overlapText = newSentence;
 								newSentence = !sentences.isEmpty() ? sentences.removeFirst() : null;
 							}
-							if (text != null) {
+							if (text != null && !text.isEmpty()) {
 								requestEmbedding(text);
 								++chunksLeft;
 							}
@@ -109,7 +109,7 @@ public class HFEmbeddingAPIServiceActor extends Actor implements HttpClientActor
 						/*
 						 * Cleanup anything left
 						 */
-						if (text != null) {
+						if (text != null && !text.isEmpty()) {
 							requestEmbedding(text);
 							++chunksLeft;
 						}
