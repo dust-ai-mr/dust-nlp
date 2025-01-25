@@ -41,6 +41,7 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 public class HFEmbeddingAPIServiceActor extends Actor implements HttpClientActor {
 
+	// chunksLeft handles async since we just spin and throw embeddings requests at the embedder
 	Integer chunksLeft = 0, chunkSize;
 	EmbeddingsRequestResponseMsg originalRequest;
 	ActorRef originalSender;
@@ -76,48 +77,51 @@ public class HFEmbeddingAPIServiceActor extends Actor implements HttpClientActor
 		return (Serializable message) -> {
 			switch(message) {
 				case EmbeddingsRequestResponseMsg msg:
+
 					originalSender = sender;
 					originalRequest = msg;
 
 					/*
 					 * Chunk by sentences with a one sentence overlap between consecutive chunks
 					 */
+					LinkedList<String> sentences;
+					String allText = originalRequest.getText();
 
-					List<String> sentences = Words.sentences(originalRequest.getText(), Locale.ENGLISH);
-					if (sentences != null)
-					{
-						String newSentence = sentences.removeFirst(), overlapText = "", text = null;
+					if (allText.length() <= chunkSize) {
+						sentences = new LinkedList<>(List.of(allText));
+					} else
+						sentences = Words.sentences(originalRequest.getText(), Locale.ENGLISH);
 
-						while (newSentence != null)
-						{
-							text = overlapText;
-							int currentSize = 0;
+                    String newSentence = sentences.removeFirst(), lastSentence = "", text = null;
 
-							while (newSentence != null && (currentSize = currentSize + newSentence.length()) < chunkSize) {
-								text = text + newSentence;
-								overlapText = newSentence;
-								newSentence = !sentences.isEmpty() ? sentences.removeFirst() : null;
-							}
-							if (text != null && !text.isEmpty()) {
-								requestEmbedding(text);
-								++chunksLeft;
-							}
-							// If we failed because our 'sentence' is too big drop the sentence
-							if (newSentence != null && newSentence.length() >= chunkSize) {
-								newSentence = !sentences.isEmpty() ? sentences.removeFirst() : null;
-								overlapText = "";
+                    while (newSentence != null)
+                    {
+						// Starting a new chunk - start with end of last chunk
+                        text = lastSentence;
+                        int currentSize = text.length();
 
-							}
+                        // Build the chunk
+                        while (newSentence != null && (currentSize = currentSize + newSentence.length()) < chunkSize) {
+                            text = text + newSentence;
+                            lastSentence = newSentence;
+                            newSentence = !sentences.isEmpty() ? sentences.removeFirst() : null;
+                        }
+                        if (!text.isEmpty()) {
+							if (text.length() < chunkSize / 2 && !sentences.isEmpty())
+								log.warn("Sentence contains {} characters", text.length());
+                            requestEmbedding(text);
+                            ++chunksLeft;
+                        }
+                        // If we failed because our 'sentence' is too big drop the sentence
+						// Note - in this case we lose the overlap
+                        if (newSentence != null && (lastSentence + newSentence).length() >= chunkSize) {
+                            lastSentence = "";
+                        }
+						if (newSentence != null && newSentence.length() >= chunkSize) {
+							newSentence = !sentences.isEmpty() ? sentences.removeFirst() : null;
 						}
-						/*
-						 * Cleanup anything left
-						 */
-						if (text != null && !text.isEmpty()) {
-							requestEmbedding(text);
-							++chunksLeft;
-						}
-					}
-					break;
+                    }
+                    break;
 
 				case HttpRequestResponseMsg msg:
 					if (msg.exception == null) {
@@ -163,7 +167,6 @@ public class HFEmbeddingAPIServiceActor extends Actor implements HttpClientActor
 	 * Always reply to sender even if we error'd somehow
 	 */
 	private void stop() {
-		cancelDeadMansHandle();
 		if (null != originalSender)
 			originalSender.tell(originalRequest, parent);
 		stopSelf();

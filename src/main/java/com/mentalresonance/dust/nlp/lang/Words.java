@@ -130,8 +130,8 @@ public class Words {
      * @param locale the local
      * @return list of sentences
      */
-    public static List<String> sentences(String text, Locale locale) {
-        List<String> sentences = new LinkedList<>();
+    public static LinkedList<String> sentences(String text, Locale locale) {
+        LinkedList<String> sentences = new LinkedList<>();
 
         BreakIterator breakIterator = BreakIterator.getSentenceInstance(locale);
         breakIterator.setText(text);

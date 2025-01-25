@@ -24,6 +24,38 @@ import java.util.regex.Pattern;
 
 public class MarkdownService {
 
+    public static String convertMarkdownToPlainText(String markdown) {
+        if (markdown == null || markdown.isEmpty()) return "";
+
+        // Remove headers (#, ##, ###, etc.)
+        markdown = markdown.replaceAll("(?m)^#{1,6}\\s*", "");
+
+        // Remove emphasis (**bold**, *italic*, __bold__, _italic_)
+        markdown = markdown.replaceAll("(\\*\\*|__)(.*?)\\1", "$2"); // Bold
+        markdown = markdown.replaceAll("(\\*|_)(.*?)\\1", "$2");    // Italic
+
+        // Remove inline code (`code`)
+        markdown = markdown.replaceAll("`(.*?)`", "$1");
+
+        // Remove blockquotes (>)
+        markdown = markdown.replaceAll("(?m)^>\\s*", "");
+
+        // Remove unordered list markers (-, *, +)
+        markdown = markdown.replaceAll("(?m)^\\s*[-*+]\\s+", "");
+
+        // Remove ordered list markers (1., 2., etc.)
+        markdown = markdown.replaceAll("(?m)^\\s*\\d+\\.\\s+", "");
+
+        // Remove links ([text](url)) and images (![alt](url))
+        markdown = markdown.replaceAll("\\[([^\\]]+)\\]\\([^)]+\\)", "$1"); // Links
+        markdown = markdown.replaceAll("!\\[([^\\]]*)\\]\\([^)]+\\)", "$1"); // Images
+
+        // Replace multiple newlines with a single newline
+        markdown = markdown.replaceAll("(\\r?\\n){2,}", "\n");
+
+        return markdown.trim();
+    }
+
     public static String convert(String markdown) {
 
         // Convert Headers

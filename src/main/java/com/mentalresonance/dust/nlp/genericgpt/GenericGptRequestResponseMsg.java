@@ -61,7 +61,7 @@ public abstract class GenericGptRequestResponseMsg implements Serializable // ex
      * Maximum number of completion tokens
      */
     @Getter
-    protected int maxTokens = 400;
+    protected int maxTokens = 4096;
 
     /**
      * Accounting
