@@ -22,6 +22,7 @@ package com.mentalresonance.dust.nlp.embeddings.huggingface;
 import com.google.gson.Gson;
 import com.mentalresonance.dust.core.actors.*;
 import com.mentalresonance.dust.core.msgs.CompletionRequestMsg;
+import com.mentalresonance.dust.core.msgs.StartMsg;
 import com.mentalresonance.dust.http.service.HttpRequestResponseMsg;
 import com.mentalresonance.dust.http.service.HttpService;
 import com.mentalresonance.dust.http.trait.HttpClientActor;
@@ -43,9 +44,15 @@ public class HFEmbeddingAPIServiceActor extends Actor implements HttpClientActor
 
 	// chunksLeft handles async since we just spin and throw embeddings requests at the embedder
 	Integer chunksLeft = 0, chunkSize;
-	EmbeddingsRequestResponseMsg originalRequest;
+	EmbeddingsRequestResponseMsg originalMsg;
 	ActorRef originalSender;
 	String api;
+	LinkedList<String> sentences;
+	/**
+	 * Chunking. lastSentence is last sentence of current chunk. Becomes first sentence of next chunk i.e.
+	 * chunks have a one sentence overlap. nextSentence will follow this overlap in the next chunk.
+	 */
+	String lastSentence = "" /* Of current chunk*/, nextSentence = "";
 
 	/**
 	 * Props
@@ -69,7 +76,11 @@ public class HFEmbeddingAPIServiceActor extends Actor implements HttpClientActor
 
 	@Override
 	public void preStart() {
-		dieIn(60 * 1000L);
+		dieIn(5 * 60 * 1000L);
+	}
+
+	public void postStop() {
+		log.trace("{} stopped", self.path);
 	}
 
 	@Override
@@ -79,48 +90,62 @@ public class HFEmbeddingAPIServiceActor extends Actor implements HttpClientActor
 				case EmbeddingsRequestResponseMsg msg:
 
 					originalSender = sender;
-					originalRequest = msg;
+					originalMsg = msg;
 
 					/*
 					 * Chunk by sentences with a one sentence overlap between consecutive chunks
 					 */
-					LinkedList<String> sentences;
-					String allText = originalRequest.getText();
 
-					if (allText.length() <= chunkSize) {
-						sentences = new LinkedList<>(List.of(allText));
-					} else
-						sentences = Words.sentences(originalRequest.getText(), Locale.ENGLISH);
+					String allText = originalMsg.getText();
+					if (allText == null || allText.isEmpty()) {
+						originalMsg.setEmbeddings(new LinkedList<>());
+						log.warn("{} received trivial text", self.path);
+						originalSender.tell(originalMsg, self);
+						stopSelf();
+					} else {
+						if (allText.length() <= chunkSize) {
+							sentences = new LinkedList<>(List.of(allText));
+						} else
+							sentences = Words.sentences(originalMsg.getText(), Locale.ENGLISH);
+						tellSelf(new StartMsg());
+					}
+					break;
 
-                    String newSentence = sentences.removeFirst(), lastSentence = "", text = null;
+				case StartMsg ignored: // Get and process next chunk
 
-                    while (newSentence != null)
-                    {
+					if (sentences.isEmpty()) {
+						originalSender.tell(originalMsg, self);
+						stopSelf();
+					}
+					else {
 						// Starting a new chunk - start with end of last chunk
-                        text = lastSentence;
-                        int currentSize = text.length();
+						String text = lastSentence;
+						int currentSize = text.length();
+						nextSentence = sentences.removeFirst();
 
-                        // Build the chunk
-                        while (newSentence != null && (currentSize = currentSize + newSentence.length()) < chunkSize) {
-                            text = text + newSentence;
-                            lastSentence = newSentence;
-                            newSentence = !sentences.isEmpty() ? sentences.removeFirst() : null;
-                        }
-                        if (!text.isEmpty()) {
-							if (text.length() < chunkSize / 2 && !sentences.isEmpty())
-								log.warn("Sentence contains {} characters", text.length());
-                            requestEmbedding(text);
-                            ++chunksLeft;
-                        }
-                        // If we failed because our 'sentence' is too big drop the sentence
-						// Note - in this case we lose the overlap
-                        if (newSentence != null && (lastSentence + newSentence).length() >= chunkSize) {
-                            lastSentence = "";
-                        }
-						if (newSentence != null && newSentence.length() >= chunkSize) {
-							newSentence = !sentences.isEmpty() ? sentences.removeFirst() : null;
+						// Build the chunk
+						while (nextSentence != null && (currentSize = currentSize + nextSentence.length()) <= chunkSize) {
+							text = text + nextSentence;
+							lastSentence = nextSentence;
+							nextSentence = !sentences.isEmpty() ? sentences.removeFirst() : null;
 						}
-                    }
+						/* If lastSentence + nextSentence exceeds chunk size we will just spin on lastSentence
+						   So fix things up by truncating nextSentence appropriately.
+						 */
+						if (null != nextSentence) {
+							if ( (lastSentence + nextSentence).length() > chunkSize) {
+								int l = chunkSize - lastSentence.length();
+								nextSentence = nextSentence.substring(0, l);
+								log.trace("{} adjusted chunk - size is {}", self.path, (lastSentence + nextSentence).length());
+							}
+						}
+						if (!text.isEmpty()) {
+							requestEmbedding(text);
+						} else {
+							// First sentence of chunk was already too long
+							tellSelf(new StartMsg());
+						}
+					}
                     break;
 
 				case HttpRequestResponseMsg msg:
@@ -128,9 +153,9 @@ public class HFEmbeddingAPIServiceActor extends Actor implements HttpClientActor
 						try {
 							Embedding embedding = new Embedding(
 								(String) msg.tag,
-									((List<Double>)new Gson().fromJson(msg.response.body().string(), LinkedList.class).getFirst())
+								((List<Double>)new Gson().fromJson(msg.response.body().string(), LinkedList.class).getFirst())
 							);
-							originalRequest.getEmbeddings().add(embedding);
+							originalMsg.getEmbeddings().add(embedding);
 						}
 						catch (Exception e) {
 							log.error("{}: {}", self.path, e.getMessage());
@@ -138,9 +163,7 @@ public class HFEmbeddingAPIServiceActor extends Actor implements HttpClientActor
 					} else
 						log.error("Embeddings exception {}", msg.exception.getMessage());
 
-					if (0 == --chunksLeft) {
-						stop();
-					}
+					tellSelf(new StartMsg());
 					break;
 
 				default: log.error("Got unexpected message $message");
@@ -168,7 +191,7 @@ public class HFEmbeddingAPIServiceActor extends Actor implements HttpClientActor
 	 */
 	private void stop() {
 		if (null != originalSender)
-			originalSender.tell(originalRequest, parent);
+			originalSender.tell(originalMsg, parent);
 		stopSelf();
 	}
 

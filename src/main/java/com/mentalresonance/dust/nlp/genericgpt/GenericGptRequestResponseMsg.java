@@ -40,6 +40,11 @@ public abstract class GenericGptRequestResponseMsg implements Serializable // ex
     public static final String MISTRAL = "mistral-nemo";
 
     /**
+     * A default model
+     */
+    public static final String PHI4 = "PHI4";
+
+    /**
      * System prompt to use
      */
     @Getter
@@ -55,7 +60,7 @@ public abstract class GenericGptRequestResponseMsg implements Serializable // ex
      * The model to use
      */
     @Getter
-    protected String model = MISTRAL;
+    protected String model = PHI4;
 
     /**
      * Maximum number of completion tokens

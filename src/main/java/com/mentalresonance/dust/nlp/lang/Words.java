@@ -20,10 +20,10 @@
 package com.mentalresonance.dust.nlp.lang;
 
 import com.ibm.icu.text.BreakIterator;
+import lombok.Getter;
 
 import java.util.Arrays;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
@@ -31,10 +31,11 @@ import java.util.stream.Collectors;
  * Fluent text processing. Typically this is for short pieces of text - e.g. named entities.
  */
 public class Words {
-    
+
+    @Getter
     String text;
 
-	Words(String text) {
+	public Words(String text) {
         this.text = text;
     }
 
@@ -44,7 +45,7 @@ public class Words {
      *  Also remove possessives while we are at it and look out for apostrophe/leftquote/rightquote hell.
      *  Finally replace multiple spaces by one.
      */
-    Words dePunctuate() {
+    public Words dePunctuate() {
         return new Words(dePunctuate(text));
     }
 
@@ -90,11 +91,12 @@ public class Words {
         );
     }
 
+
     /**
      * Remove special characters '-', '&'
      * @return Words - deSpecialed
      */
-    Words deSpecialChar() {
+    public Words deSpecialChar() {
         return new Words(
             text
                 .replaceAll("\\u002d|\\u0026", " ")
@@ -107,7 +109,7 @@ public class Words {
      * Words lower case
      * @return Words lower cased
      */
-    Words lowerCase() { return new Words(text.toLowerCase()); }
+    public Words lowerCase() { return new Words(text.toLowerCase()); }
 
     /**
      * If any word is all CAPS leave it as such, else lower case it
@@ -151,7 +153,7 @@ public class Words {
      * @param input text
      * @return true if all upper case
      */
-    static boolean allUpper(String input) {
+    public static boolean allUpper(String input) {
         return input.chars().noneMatch(Character::isLowerCase);
     }
     /**
@@ -159,7 +161,7 @@ public class Words {
      * @param input text
      * @return true if all lower case
      */
-    static boolean allLower(String input) {
+    public static boolean allLower(String input) {
         return input.chars().noneMatch(Character::isUpperCase);
     }
 }

@@ -87,7 +87,6 @@ public class GenericGptAPIServiceActor extends Actor implements HttpClientActor 
 	@Override
 	public void postStop() throws Exception {
 		super.postStop();
-		cancelDeadMansHandle();
 	}
 
 	@Override
