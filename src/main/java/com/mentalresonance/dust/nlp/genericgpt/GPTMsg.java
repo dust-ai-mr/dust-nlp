@@ -17,39 +17,30 @@
  *
  */
 
-package com.mentalresonance.dust.nlp.embeddings;
+package com.mentalresonance.dust.nlp.genericgpt;
 
 import lombok.Getter;
 import lombok.Setter;
 
 import java.io.Serializable;
-import java.util.LinkedList;
-import java.util.List;
 
-/**
- * Msg to request the entire text be processed (chunked) and the chunks embedded
- */
 @Getter
-public class EmbeddingsRequestResponseMsg implements Serializable {
+public class GPTMsg implements Serializable {
     /**
-     * Text to embed
+     * The request to the endpoint
      */
-    String text;
+    protected String request;
 
     /**
-     * List of embeddings - one per chunk
+     * The model to use
      */
     @Setter
-    List<Embedding> embeddings = new LinkedList<>();
+    protected String model;
 
     /**
-     * Constructor
-     * @param text to embed
+     * Error message if any
      */
-    public EmbeddingsRequestResponseMsg(String text) {
-        this.text = text;
-    }
+    @Setter
+    protected String error = null;
 
-    @Override
-    public String toString() { return "EmbeddingsRequestResponseMsg: " + embeddings.size() + " chunks."; }
 }

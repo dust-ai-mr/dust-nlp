@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright 2024-2025 Alan Littleford
+ *  Copyright 2024-Present Alan Littleford
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import java.util.LinkedHashMap;
 /**
  * Most GPT interfaces are based on the ChatGPT model. This abstracts out most of the boilerplate
  */
-public abstract class GenericGptRequestResponseMsg implements Serializable // extends ReturnableMsg
+public abstract class GenericGptRequestResponseMsg extends GPTMsg // extends ReturnableMsg
 {
     /**
      * Default prompt
@@ -50,17 +50,6 @@ public abstract class GenericGptRequestResponseMsg implements Serializable // ex
     @Getter
     protected String systemPrompt = DEFAULT_SYSTEM_PROMPT;
 
-    /**
-     * The request to the LLM
-     */
-    @Getter
-    protected String request;
-
-    /**
-     * The model to use
-     */
-    @Getter
-    protected String model = PHI4;
 
     /**
      * Maximum number of completion tokens

@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright 2024-2025 Alan Littleford
+ *  Copyright 2024-Present Alan Littleford
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -141,14 +141,14 @@ public class GenericGptAPIServiceActor extends Actor implements HttpClientActor 
 							try {
 								utterance = msg.response.body().string();
 								originalRequest.response = new Gson().fromJson(utterance, LinkedHashMap.class);
-								originalSender.tell(originalRequest, parent);
-							} catch (Exception e) {
-								log.error(e.getMessage());
-								log.error( "Response from GPT: {}", utterance);
-							} finally {
-								stopSelf();
+							}
+							catch (Exception e) {
+								log.error( "Error: {} Response from GPT: {}", e.getMessage(), utterance);
+								originalRequest.setError(e.getMessage());
 							}
 						}
+						originalSender.tell(originalRequest, parent);
+						stopSelf();
 					}
 					break;
 

@@ -32,10 +32,10 @@ import okhttp3.Request;
 import okhttp3.sse.EventSource;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 
 
 /**
@@ -43,7 +43,7 @@ import java.util.Map;
  * Should be used under a service manager (i.e. it processes one request then stops)
  */
 @Slf4j
-public class ChatGptStreamingAPIServiceActor extends GenericGptStreamingAPIServiceActor implements HttpClientActor {
+public class ResponsesGptStreamingAPIServiceActor extends GenericGptStreamingAPIServiceActor implements HttpClientActor {
 
 	String key;
 	EventSource eventSource = null;
@@ -55,15 +55,15 @@ public class ChatGptStreamingAPIServiceActor extends GenericGptStreamingAPIServi
 	 * @return Props
 	 */
 	public static Props props(ActorRef proxyThrottler, String key) {
-		return Props.create(ChatGptStreamingAPIServiceActor.class, proxyThrottler, key);
+		return Props.create(ResponsesGptStreamingAPIServiceActor.class, proxyThrottler, key);
 	}
 	/**
 	 * Props
 	 * @param throttler nullable throttler
 	 * @param key API key
 	 */
-    public ChatGptStreamingAPIServiceActor(ActorRef throttler, String key) {
-		super("https://api.openai.com/v1/chat/completions", throttler);
+    public ResponsesGptStreamingAPIServiceActor(ActorRef throttler, String key) {
+		super("https://api.openai.com/v1/responses", throttler);
 		this.key = key;
 	}
 
@@ -72,20 +72,24 @@ public class ChatGptStreamingAPIServiceActor extends GenericGptStreamingAPIServi
 	public ActorBehavior createBehavior() {
 		return (Serializable message) -> {
 			switch(message) {
-				case ChatGptRequestResponseMsg msg:
+				case ResponsesGptRequestResponseMsg msg:
 					originalSender = sender;
 					originalRequest = msg;
 
-					Map<String, Object> data = Map.of(
+					Map<String, Object> data = new HashMap<>(
+						Map.of(
 							"model",  msg.getModel(),
-							"messages", List.of(
-									Map.of("role", "system", "content", msg.getSystemPrompt()),
-									Map.of("role", "user", "content", msg.getRequest())
-							) ,
+							"input", msg.getRequest(),
 							"temperature",  msg.getTemperature(),
-							"max_tokens",  msg.getMaxTokens(),
-							"stream", true
+							"max_output_tokens",  msg.getMaxTokens(),
+							"stream", true,
+							"store", false
+						)
 					);
+
+					if (msg.options != null) {
+						data.putAll(msg.options);
+					}
 
 					Request gptRequest = HttpService.buildPostRequest(
 							api,

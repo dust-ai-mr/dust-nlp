@@ -20,7 +20,9 @@
 package com.mentalresonance.dust.nlp.chatgpt;
 
 import com.google.gson.Gson;
-import com.mentalresonance.dust.core.actors.*;
+import com.mentalresonance.dust.core.actors.ActorBehavior;
+import com.mentalresonance.dust.core.actors.ActorRef;
+import com.mentalresonance.dust.core.actors.Props;
 import com.mentalresonance.dust.http.service.HttpRequestResponseMsg;
 import com.mentalresonance.dust.http.service.HttpService;
 import com.mentalresonance.dust.http.trait.HttpClientActor;
@@ -29,17 +31,14 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.Request;
 
 import java.io.Serializable;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Requests/Responses to chat GPT
  * Should be used under a service manager (i.e. it processes one request then stops)
  */
 @Slf4j
-public class ChatGptAPIServiceActor extends GenericGptAPIServiceActor implements HttpClientActor {
+public class ResponseGptAPIServiceActor extends GenericGptAPIServiceActor implements HttpClientActor {
 
 	String key;
 
@@ -50,7 +49,7 @@ public class ChatGptAPIServiceActor extends GenericGptAPIServiceActor implements
 	 * @return Props
 	 */
 	public static Props props(ActorRef proxyThrottler, String key) {
-		return Props.create(ChatGptAPIServiceActor.class, proxyThrottler, key);
+		return Props.create(ResponseGptAPIServiceActor.class, proxyThrottler, key);
 	}
 
 	/**
@@ -58,8 +57,8 @@ public class ChatGptAPIServiceActor extends GenericGptAPIServiceActor implements
 	 * @param throttler nullable throttler
 	 * @param key API key
 	 */
-	public ChatGptAPIServiceActor(ActorRef throttler, String key) {
-		super("https://api.openai.com/v1/chat/completions", throttler);
+	public ResponseGptAPIServiceActor(ActorRef throttler, String key) {
+		super("https://api.openai.com/v1/responses", throttler);
 		this.key = key;
 	}
 
@@ -71,28 +70,30 @@ public class ChatGptAPIServiceActor extends GenericGptAPIServiceActor implements
 	@Override
 	public  ActorBehavior createBehavior() {
 		return (Serializable message) -> {
-            if (Objects.requireNonNull(message) instanceof ChatGptRequestResponseMsg msg) {
+            if (Objects.requireNonNull(message) instanceof ResponsesGptRequestResponseMsg msg) {
                 originalSender = sender;
                 originalRequest = msg;
 
-                Map<String, Object> data = Map.of(
-                        "model", msg.getModel(),
-                        "messages", List.of(
-                                Map.of("role", "system", "content", msg.getSystemPrompt()),
-                                Map.of("role", "user", "content", msg.getRequest())
-                        ),
-                        "temperature", msg.getTemperature(),
-                        "max_tokens", msg.getMaxTokens()
-                );
+                Map<String, Object> data = new HashMap(Map.of(
+					"model", msg.getModel(),
+					"input", msg.getRequest(),
+					"temperature", msg.getTemperature(),
+					"max_output_tokens", msg.getMaxTokens(),
+					"store", false
+                ));
+
+				if (msg.options != null) {
+					data.putAll(msg.options);
+				}
 
                 Request gptRequest = HttpService.buildPostRequest(
-                        api,
-                        new Gson().toJson(data, LinkedHashMap.class),
-                        Map.of(
-                                "Authorization", "Bearer " + key,
-                                "Content-Type", "application/json",
-                                "Accept", "application/json"
-                        )
+					api,
+					new Gson().toJson(data, LinkedHashMap.class),
+					Map.of(
+						"Authorization", "Bearer " + key,
+						"Content-Type", "application/json",
+						"Accept", "application/json"
+					)
                 );
 
                 HttpRequestResponseMsg rrm = new HttpRequestResponseMsg(self, gptRequest);

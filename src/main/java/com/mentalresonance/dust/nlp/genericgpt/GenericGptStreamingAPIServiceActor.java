@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright 2024-2025 Alan Littleford
+ *  Copyright 2024-Present Alan Littleford
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -154,7 +154,9 @@ public class GenericGptStreamingAPIServiceActor extends Actor implements HttpCli
 					break;
 
 				case StreamingHttpEndMsg ignored:
-					eventSource.cancel();
+					if (null != eventSource) {
+						eventSource.cancel();
+					}
 					originalSender.tell(message, self);
 					stopSelf();
 					break;
@@ -178,7 +180,9 @@ public class GenericGptStreamingAPIServiceActor extends Actor implements HttpCli
 		/*
 		 * Send message back to service Actor so it can try again
 		 */
-		eventSource.cancel();
+		if (null != eventSource) {
+			eventSource.cancel();
+		}
 		parent.tell(originalRequest, originalSender);
 	}
 }

@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright 2024-2025 Alan Littleford
+ *  Copyright 2024-Present Alan Littleford
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -41,7 +41,9 @@ public class ChatGTPUtils {
 	 * With a .data string in a streaming message Chat GPT has its own protocol going on
 	 * (i.e. msg.data is far from what should be printed). We handle this here
 	 * @param msg streaming data
-	 * @return text to display or null
+	 * @return text to display or null.
+	 *
+	 * Note that the completions API and the responses API use a different protocol, we deal with this here.
 	 */
 	public static String streamingText(StreamingHttpDataMsg msg) {
 		String text = null;
@@ -49,25 +51,33 @@ public class ChatGTPUtils {
 		if (!msg.getData().equals("[DONE]")) {
 			try {
 				Gson gson = new Gson();
-				Map<String, List<Map<String, Object>>> m = gson.fromJson(msg.getData(), LinkedHashMap.class);
-				if (m != null && m.containsKey("choices")) {
-					List<Map<String, Object>> choices = m.get("choices");
-					if (choices != null && !choices.isEmpty()) {
-						Map<String, Object> choice = choices.get(0);
-						if (choice.containsKey("delta")) {
-							Map<String, String> delta = (Map<String, String>) choice.get("delta");
-							if (delta != null && delta.containsKey("content")) {
-								String content = delta.get("content");
-								if (content != null) {
-									text = content.replaceAll("\n", "<br>");
+				LinkedHashMap<String, Object> m = gson.fromJson(msg.getData(), LinkedHashMap.class);
+				if (m != null) {
+					if (m.containsKey("choices")) { // Completions response
+						List<Map<String, Object>> choices = (List<Map<String, Object>>) m.get("choices");
+						if (choices != null && !choices.isEmpty()) {
+							Map<String, Object> choice = choices.get(0);
+							if (choice.containsKey("delta")) {
+								Map<String, String> delta = (Map<String, String>) choice.get("delta");
+								if (delta != null && delta.containsKey("content")) {
+									String content = delta.get("content");
+									if (content != null) {
+										text = content;
+									}
 								}
 							}
 						}
+					}
+					else if (m.containsKey("delta")) {  // Responses response
+						text = m.get("delta").toString();
 					}
 				}
 			} catch (Exception e) {
 				log.error("{} utterance: {}", e.getMessage(), msg.getData());
 			}
+		}
+		if (text != null) {
+			text = text.replaceAll("\n", "<br>");
 		}
 		return text;
 	}

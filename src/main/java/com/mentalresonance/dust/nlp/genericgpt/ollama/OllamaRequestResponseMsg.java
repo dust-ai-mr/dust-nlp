@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright 2024-2025 Alan Littleford
+ *  Copyright 2024-Present Alan Littleford
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -93,8 +93,9 @@ public class OllamaRequestResponseMsg extends GenericGptRequestResponseMsg
         Map<String, Object> errorMap;
 
         if (null != response) {
-            if (null != (errorMap = (Map)response.get("error"))) {
-                throw new GenericGptException(errorMap.get("message").toString());
+            String error = (String)response.get("error");
+            if (null != error) {
+                throw new GenericGptException(error);
             }
             else {
                 utterance = (String) response.get("response");
