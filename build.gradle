@@ -21,7 +21,7 @@ plugins {
 }
 
 group 'com.mentalresonance'
-version '1.2.0'
+version '1.1.5'
 
 repositories {
     mavenLocal()
@@ -44,9 +44,9 @@ dependencies {
 
     implementation 'com.hexadevlabs:gpt4all-java-binding:1.1.5'
 
-    api('com.mentalresonance:dust-core:1.1.2')
-    api('com.mentalresonance:dust-http:1.0.4')
-    api('com.mentalresonance:dust-html:1.0.4')
+    api('com.mentalresonance:dust-core:1.1.5')
+    api('com.mentalresonance:dust-http:1.1.5')
+    api('com.mentalresonance:dust-html:1.1.5')
     api('com.ibm.icu:icu4j:69.1')
     api('com.ibm.icu:icu4j-charset:69.1')
     api('com.ibm.icu:icu4j-localespi:69.1')
