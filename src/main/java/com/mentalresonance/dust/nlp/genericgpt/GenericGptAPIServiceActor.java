@@ -37,10 +37,13 @@ import java.util.Map;
 @Slf4j
 public class GenericGptAPIServiceActor extends Actor implements HttpClientActor {
 
+	public static String BEARER_KEY = "Bearer";
+
 	/**
 	 * Completions endpoint
 	 */
 	protected String api;
+
 	Integer retries = 3;
 	/**
 	 * Optional throttler
@@ -54,6 +57,11 @@ public class GenericGptAPIServiceActor extends Actor implements HttpClientActor 
 	 * Original Sender
 	 */
 	protected ActorRef originalSender;
+
+	/**
+	 * Optional bearer token (key) actually used in the API call
+	 */
+	protected String bearer;
 
 	/**
 	 * Props
@@ -141,6 +149,10 @@ public class GenericGptAPIServiceActor extends Actor implements HttpClientActor 
 							try {
 								utterance = msg.response.body().string();
 								originalRequest.response = new Gson().fromJson(utterance, LinkedHashMap.class);
+								originalRequest.response.put(BEARER_KEY, bearer);
+								if (originalRequest.accountingRef != null) {
+									originalRequest.accountingRef.tell(originalRequest, self);
+								}
 							}
 							catch (Exception e) {
 								log.error( "Error: {} Response from GPT: {}", e.getMessage(), utterance);

@@ -32,10 +32,7 @@ import okhttp3.Request;
 import okhttp3.sse.EventSource;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -46,7 +43,6 @@ import java.util.Map;
 public class ResponsesGptStreamingAPIServiceActor extends GenericGptStreamingAPIServiceActor implements HttpClientActor {
 
 	String key;
-	EventSource eventSource = null;
 
 	/**
 	 * Props
@@ -71,48 +67,48 @@ public class ResponsesGptStreamingAPIServiceActor extends GenericGptStreamingAPI
 	@Override
 	public ActorBehavior createBehavior() {
 		return (Serializable message) -> {
-			switch(message) {
-				case ResponsesGptRequestResponseMsg msg:
-					originalSender = sender;
-					originalRequest = msg;
+            if (Objects.requireNonNull(message) instanceof ResponsesGptRequestResponseMsg msg) {
+                originalSender = sender;
+                originalRequest = msg;
 
-					Map<String, Object> data = new HashMap<>(
-						Map.of(
-							"model",  msg.getModel(),
-							"input", msg.getRequest(),
-							"temperature",  msg.getTemperature(),
-							"max_output_tokens",  msg.getMaxTokens(),
-							"stream", true,
-							"store", false
-						)
-					);
+                bearer = (msg.getKey() != null ? msg.getKey() : key);
 
-					if (msg.options != null) {
-						data.putAll(msg.options);
-					}
+                Map<String, Object> data = new HashMap<>(
+                        Map.of(
+                                "model", msg.getModel(),
+                                "input", msg.getRequest(),
+                                "temperature", msg.getTemperature(),
+                                "max_output_tokens", msg.getMaxTokens(),
+                                "stream", true,
+                                "store", false
+                        )
+                );
 
-					Request gptRequest = HttpService.buildPostRequest(
-							api,
-							new Gson().toJson(data, LinkedHashMap.class),
-							Map.of(
-									"Authorization", "Bearer " + key,
-									"Content-Type",  "application/json",
-									"Accept", "application/json"
-							)
-					);
+                if (msg.options != null) {
+                    data.putAll(msg.options);
+                }
 
-					HttpRequestResponseMsg rrm = new HttpRequestResponseMsg(self, gptRequest);
+                Request gptRequest = HttpService.buildPostRequest(
+                        api,
+                        new Gson().toJson(data, LinkedHashMap.class),
+                        Map.of(
+                                "Authorization", "Bearer " + bearer,
+                                "Content-Type", "application/json",
+                                "Accept", "application/json"
+                        )
+                );
 
-					if (null != throttler) {
-						throttler.tell(rrm, sender);
-					} else
-						eventSource = request(rrm, sender, self);
+                HttpRequestResponseMsg rrm = new HttpRequestResponseMsg(self, gptRequest);
 
-					originalSender.tell(new ChatGPTStartedStreamingMsg(), self);
-					break;
+                if (null != throttler) {
+                    throttler.tell(rrm, sender);
+                } else
+                    eventSource = request(rrm, sender, self);
 
-				default: super.createBehavior().onMessage(message);
-			}
+                originalSender.tell(new ChatGPTStartedStreamingMsg(), self);
+            } else {
+                super.createBehavior().onMessage(message);
+            }
 		};
 	}
 }

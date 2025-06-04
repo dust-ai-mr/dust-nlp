@@ -127,14 +127,10 @@ public class ChatGptRequestResponseMsg extends GenericGptRequestResponseMsg
             }
             else {
                 List<Map<String, Object>> choices = (List<Map<String, Object>>) response.get("choices");
-                Map<String, Double> usage = (Map<String, Double>) response.get("usage");
 
                 if (null != choices && choices.size() > 0) {
                     Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
                     utterance = (null != message) ? message.get("content").toString() : null;
-                    promptTokens = usage.get("prompt_tokens").intValue();
-                    completionTokens = usage.get("completion_tokens").intValue();
-                    totalTokens = usage.get("total_tokens").intValue();
                 } else
                     throw new GenericGptException("No choices in response");
             }

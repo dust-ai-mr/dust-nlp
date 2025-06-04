@@ -21,11 +21,13 @@ package com.mentalresonance.dust.nlp.genericgpt;
 
 import com.google.gson.Gson;
 import com.mentalresonance.dust.core.actors.*;
+import com.mentalresonance.dust.http.msgs.StreamingHttpDataMsg;
 import com.mentalresonance.dust.http.msgs.StreamingHttpEndMsg;
 import com.mentalresonance.dust.http.msgs.StreamingHttpFailureMsg;
 import com.mentalresonance.dust.http.service.HttpRequestResponseMsg;
 import com.mentalresonance.dust.http.service.HttpService;
 import com.mentalresonance.dust.http.trait.HttpClientActor;
+import com.mentalresonance.dust.nlp.ChatGTPUtils;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Request;
 import okhttp3.sse.EventSource;
@@ -41,10 +43,13 @@ import java.util.Map;
 @Slf4j
 public class GenericGptStreamingAPIServiceActor extends Actor implements HttpClientActor {
 
+	public static String BEARER_KEY = "Bearer";
+
 	/**
 	 * Completions end point
 	 */
 	protected String api;
+
 	Integer retries = 3;
 	/**
 	 * Optional throttler
@@ -62,7 +67,10 @@ public class GenericGptStreamingAPIServiceActor extends Actor implements HttpCli
 	 * Event source for Server Side Events (which API uses for streaming)
 	 */
 	protected EventSource eventSource = null;
-
+	/**
+	 * Optional bearer token (key) actually used in the API call
+	 */
+	protected String bearer;
 	/**
 	 * Props
 	 * @param api endpoint
@@ -132,24 +140,8 @@ public class GenericGptStreamingAPIServiceActor extends Actor implements HttpCli
 
 				case HttpRequestResponseMsg msg:
 					if (null == msg.response) {
-						// From throttler - so now do request
-						request(msg, originalSender, self);
-					}
-					else {
-						if (msg.exception != null) {
-							if (-- retries > 0) {
-								self.tell(originalRequest, originalSender);
-							}
-							else {
-								log.warn("Request {} failed", originalRequest);
-								stopSelf();
-							}
-						}
-						else {
-							originalRequest.response = new Gson().fromJson(msg.response.body().string(), LinkedHashMap.class);
-							originalSender.tell(originalRequest, parent);
-							stopSelf();
-						}
+						// From throttler - so now do request. All data will be in StreamingHttpDataMsgs
+						eventSource = request(msg, originalSender, self);
 					}
 					break;
 
@@ -167,6 +159,9 @@ public class GenericGptStreamingAPIServiceActor extends Actor implements HttpCli
 					log.error("Streaming failure: {} {}", msg.getResponse().code(), error);
 					originalSender.tell(msg, parent);
 					stopSelf();
+					break;
+
+				case StreamingHttpDataMsg msg:
 					break;
 
 				default: log.error("Got unexpected message '{}'", message);

@@ -74,6 +74,8 @@ public class ResponseGptAPIServiceActor extends GenericGptAPIServiceActor implem
                 originalSender = sender;
                 originalRequest = msg;
 
+				bearer = (msg.getKey() != null ? msg.getKey() : key);
+
                 Map<String, Object> data = new HashMap(Map.of(
 					"model", msg.getModel(),
 					"input", msg.getRequest(),
@@ -90,7 +92,7 @@ public class ResponseGptAPIServiceActor extends GenericGptAPIServiceActor implem
 					api,
 					new Gson().toJson(data, LinkedHashMap.class),
 					Map.of(
-						"Authorization", "Bearer " + key,
+						"Authorization", "Bearer " +  bearer,
 						"Content-Type", "application/json",
 						"Accept", "application/json"
 					)

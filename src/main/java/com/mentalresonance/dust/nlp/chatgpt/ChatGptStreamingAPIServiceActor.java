@@ -23,9 +23,11 @@ import com.google.gson.Gson;
 import com.mentalresonance.dust.core.actors.ActorBehavior;
 import com.mentalresonance.dust.core.actors.ActorRef;
 import com.mentalresonance.dust.core.actors.Props;
+import com.mentalresonance.dust.http.msgs.StreamingHttpDataMsg;
 import com.mentalresonance.dust.http.service.HttpRequestResponseMsg;
 import com.mentalresonance.dust.http.service.HttpService;
 import com.mentalresonance.dust.http.trait.HttpClientActor;
+import com.mentalresonance.dust.nlp.ChatGTPUtils;
 import com.mentalresonance.dust.nlp.genericgpt.GenericGptStreamingAPIServiceActor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Request;
@@ -35,7 +37,7 @@ import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
+import java.util.Objects;
 
 
 /**
@@ -71,28 +73,31 @@ public class ChatGptStreamingAPIServiceActor extends GenericGptStreamingAPIServi
 	@Override
 	public ActorBehavior createBehavior() {
 		return (Serializable message) -> {
-			switch(message) {
-				case ChatGptRequestResponseMsg msg:
+            switch(message) {
+				case  ChatGptRequestResponseMsg msg:
 					originalSender = sender;
 					originalRequest = msg;
 
+					bearer = msg.getKey() != null ? msg.getKey() : key;
+
 					Map<String, Object> data = Map.of(
-							"model",  msg.getModel(),
+							"model", msg.getModel(),
 							"messages", List.of(
 									Map.of("role", "system", "content", msg.getSystemPrompt()),
 									Map.of("role", "user", "content", msg.getRequest())
-							) ,
-							"temperature",  msg.getTemperature(),
-							"max_tokens",  msg.getMaxTokens(),
-							"stream", true
+							),
+							"temperature", msg.getTemperature(),
+							"max_completion_tokens", msg.getMaxTokens(),
+							"stream", true,
+							"stream_options", Map.of("include_usage", true)
 					);
 
 					Request gptRequest = HttpService.buildPostRequest(
 							api,
 							new Gson().toJson(data, LinkedHashMap.class),
 							Map.of(
-									"Authorization", "Bearer " + key,
-									"Content-Type",  "application/json",
+									"Authorization", "Bearer " + bearer,
+									"Content-Type", "application/json",
 									"Accept", "application/json"
 							)
 					);
@@ -107,8 +112,17 @@ public class ChatGptStreamingAPIServiceActor extends GenericGptStreamingAPIServi
 					originalSender.tell(new ChatGPTStartedStreamingMsg(), self);
 					break;
 
-				default: super.createBehavior().onMessage(message);
-			}
+				case StreamingHttpDataMsg msg:
+					if (originalRequest.getAccountingRef() != null) {
+						Map<String, Object> usage = ChatGTPUtils.streamingUsage(msg);
+						if (null != usage) {
+							log.info("Using streaming usage  {}", usage);
+						}
+					}
+
+				default:
+                	super.createBehavior().onMessage(message);
+            }
 		};
 	}
 }

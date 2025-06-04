@@ -81,4 +81,22 @@ public class ChatGTPUtils {
 		}
 		return text;
 	}
+
+	public static Map<String, Object> streamingUsage(StreamingHttpDataMsg msg) {
+
+		if (!msg.getData().equals("[DONE]")) {
+			try {
+				Gson gson = new Gson();
+				LinkedHashMap<String, Object> m = gson.fromJson(msg.getData(), LinkedHashMap.class);
+				if (m != null) {
+					if (m.containsKey("usage")) { // Usage response
+						return (Map<String, Object>)m.get("usage");
+					}
+				}
+			} catch (Exception e) {
+				log.error("{} utterance: {}", e.getMessage(), msg.getData());
+			}
+		}
+		return null;
+	}
 }

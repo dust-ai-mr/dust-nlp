@@ -75,6 +75,8 @@ public class ChatGptAPIServiceActor extends GenericGptAPIServiceActor implements
                 originalSender = sender;
                 originalRequest = msg;
 
+				bearer = (msg.getKey() != null ? msg.getKey() : key);
+
                 Map<String, Object> data = Map.of(
                         "model", msg.getModel(),
                         "messages", List.of(
@@ -89,7 +91,7 @@ public class ChatGptAPIServiceActor extends GenericGptAPIServiceActor implements
                         api,
                         new Gson().toJson(data, LinkedHashMap.class),
                         Map.of(
-                                "Authorization", "Bearer " + key,
+                                "Authorization", "Bearer " + bearer,
                                 "Content-Type", "application/json",
                                 "Accept", "application/json"
                         )

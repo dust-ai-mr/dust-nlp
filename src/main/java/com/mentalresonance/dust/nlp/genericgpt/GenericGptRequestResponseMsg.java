@@ -19,6 +19,7 @@
 
 package com.mentalresonance.dust.nlp.genericgpt;
 
+import com.mentalresonance.dust.core.actors.ActorRef;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -50,18 +51,35 @@ public abstract class GenericGptRequestResponseMsg extends GPTMsg // extends Ret
     @Getter
     protected String systemPrompt = DEFAULT_SYSTEM_PROMPT;
 
+    /**
+     * Optional API key. If not null overrides key in service actor
+     */
+    @Getter
+    protected String key = null;
+
+    public Serializable setKey(String key)
+    {
+        this.key = key;
+        return this;
+    }
+
+    /**
+     * Optional ref for Accounting. If not null the accounting Actor gets
+     */
+    @Getter
+    protected ActorRef accountingRef = null;
+
+    public Serializable setAccountingRef(ActorRef accountingRef)
+    {
+        this.accountingRef = accountingRef;
+        return this;
+    }
 
     /**
      * Maximum number of completion tokens
      */
     @Getter
-    protected int maxTokens = 4096;
-
-    /**
-     * Accounting
-     */
-    @Getter
-    protected Integer promptTokens, completionTokens, totalTokens;
+    protected int maxTokens = 8192;
 
     /**
      * Temperature - we default to 0

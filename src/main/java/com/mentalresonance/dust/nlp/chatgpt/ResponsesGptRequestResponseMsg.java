@@ -70,7 +70,6 @@ public class ResponsesGptRequestResponseMsg extends GenericGptRequestResponseMsg
             }
             else {
                 List<Map<String, Object>> output = (List<Map<String, Object>>) response.get("output");
-                Map<String, Double> usage = (Map<String, Double>) response.get("usage");
 
                 if (null != output && output.size() > 0) {
                     Optional<Map<String, Object>> message = output.stream()
@@ -87,10 +86,6 @@ public class ResponsesGptRequestResponseMsg extends GenericGptRequestResponseMsg
                             throw new GenericGptException("Response: no utterance found");
                     } else
                         throw new GenericGptException("Response: no message found");
-
-                    promptTokens = usage.get("input_tokens").intValue();
-                    completionTokens = usage.get("output_tokens").intValue();
-                    totalTokens = usage.get("total_tokens").intValue();
                 } else
                     throw new GenericGptException("No output in response");
             }
