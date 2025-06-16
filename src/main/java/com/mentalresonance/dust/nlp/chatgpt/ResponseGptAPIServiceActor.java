@@ -74,6 +74,9 @@ public class ResponseGptAPIServiceActor extends GenericGptAPIServiceActor implem
                 originalSender = sender;
                 originalRequest = msg;
 
+				if (null == msg.getKey())
+					log.warn("ResponseGptAPIServiceActor: No key - prompt={}", msg.getRequest());
+
 				bearer = (msg.getKey() != null ? msg.getKey() : key);
 
                 Map<String, Object> data = new HashMap(Map.of(

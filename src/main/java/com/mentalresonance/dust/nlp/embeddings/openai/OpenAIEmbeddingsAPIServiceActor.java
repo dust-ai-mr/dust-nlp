@@ -50,7 +50,7 @@ public class OpenAIEmbeddingsAPIServiceActor extends Actor implements HttpClient
 
 	static final String api = "https://api.openai.com/v1/embeddings";
 
-	String key;
+	String key, bearer;
 
 	ActorRef throttler;
 
@@ -87,6 +87,8 @@ public class OpenAIEmbeddingsAPIServiceActor extends Actor implements HttpClient
 					originalSender = sender;
 					originalRequest = msg;
 
+					bearer = null != msg.getKey() ? msg.getKey() : key;
+
 					Map<String, Object> data = Map.of(
 							"model", msg.getModel(),
 							"input", msg.getRequest(),
@@ -100,7 +102,7 @@ public class OpenAIEmbeddingsAPIServiceActor extends Actor implements HttpClient
 							api,
 							new Gson().toJson(data, LinkedHashMap.class),
 							Map.of(
-									"Authorization", "Bearer " + key,
+									"Authorization", "Bearer " + bearer,
 									"Content-Type", "application/json",
 									"Accept", "application/json"
 							)
@@ -126,6 +128,7 @@ public class OpenAIEmbeddingsAPIServiceActor extends Actor implements HttpClient
 						} else {
 							String json = "";
 							try {
+								originalRequest.setBearer(bearer);
 								json = msg.response.body().string();
 								LinkedHashMap<String, Object> response = new Gson().fromJson(json, LinkedHashMap.class);
 								if (response.get("error") != null) {
@@ -134,6 +137,9 @@ public class OpenAIEmbeddingsAPIServiceActor extends Actor implements HttpClient
 								else {
 									List<Map<String, Object>> data = (List<Map<String, Object>>) response.get("data");
 									originalRequest.response = (List<Double>)data.get(0).get("embedding");
+									originalRequest
+										.setTokens(((Map<String, Double>)response.get("usage")).get("total_tokens").intValue());
+
 								}
 							}
 							catch (Exception e) {
@@ -142,6 +148,9 @@ public class OpenAIEmbeddingsAPIServiceActor extends Actor implements HttpClient
 							}
 							finally {
 								originalSender.tell(originalRequest, self);
+								if (originalRequest.getAccountingRef() != null) {
+									originalRequest.getAccountingRef().tell(originalRequest, self);
+								}
 								stopSelf();
 							}
 						}

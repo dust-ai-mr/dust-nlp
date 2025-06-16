@@ -19,16 +19,20 @@
 
 package com.mentalresonance.dust.nlp.genericgpt;
 
+import com.google.gson.Gson;
 import com.mentalresonance.dust.core.actors.ActorRef;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 /**
  * Most GPT interfaces are based on the ChatGPT model. This abstracts out most of the boilerplate
  */
+@Slf4j
 public abstract class GenericGptRequestResponseMsg extends GPTMsg // extends ReturnableMsg
 {
     /**
@@ -50,30 +54,6 @@ public abstract class GenericGptRequestResponseMsg extends GPTMsg // extends Ret
      */
     @Getter
     protected String systemPrompt = DEFAULT_SYSTEM_PROMPT;
-
-    /**
-     * Optional API key. If not null overrides key in service actor
-     */
-    @Getter
-    protected String key = null;
-
-    public Serializable setKey(String key)
-    {
-        this.key = key;
-        return this;
-    }
-
-    /**
-     * Optional ref for Accounting. If not null the accounting Actor gets
-     */
-    @Getter
-    protected ActorRef accountingRef = null;
-
-    public Serializable setAccountingRef(ActorRef accountingRef)
-    {
-        this.accountingRef = accountingRef;
-        return this;
-    }
 
     /**
      * Maximum number of completion tokens
@@ -175,5 +155,18 @@ public abstract class GenericGptRequestResponseMsg extends GPTMsg // extends Ret
     @Override
     public String toString() {
         return "%s: %s".formatted(this.getClass(), request);
+    }
+
+    /**
+     * Assumes utterance is just a plain json object. Return equivalent Map or null or error
+     * @return Map or null
+     */
+    public HashMap<String, Object> getUtteranceAsMap() {
+        try {
+            return new Gson().fromJson(getUtterance(), HashMap.class);
+        } catch (Exception e) {
+            log.error("GenericGptRequestResponseMsg: getUtteranceAsMap failed: {}", e.getMessage());
+            return null;
+        }
     }
 }

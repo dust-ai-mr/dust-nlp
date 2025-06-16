@@ -71,6 +71,9 @@ public class ResponsesGptStreamingAPIServiceActor extends GenericGptStreamingAPI
                 originalSender = sender;
                 originalRequest = msg;
 
+                if (null == msg.getKey())
+                    log.warn("ResponsesGptStreamingAPIServiceActor: No key - prompt={}", msg.getRequest());
+
                 bearer = (msg.getKey() != null ? msg.getKey() : key);
 
                 Map<String, Object> data = new HashMap<>(

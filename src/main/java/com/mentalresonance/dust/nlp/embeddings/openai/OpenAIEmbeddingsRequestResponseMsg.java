@@ -33,6 +33,10 @@ public class OpenAIEmbeddingsRequestResponseMsg extends GPTMsg {
     @Setter
     List<Double> response;
 
+    @Getter
+    @Setter
+    Integer tokens;
+
     public OpenAIEmbeddingsRequestResponseMsg(String model, String request, Integer length) {
         this.model = model;
         this.request = request;

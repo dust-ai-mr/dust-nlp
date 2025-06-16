@@ -37,8 +37,6 @@ import java.util.Map;
 @Slf4j
 public class GenericGptAPIServiceActor extends Actor implements HttpClientActor {
 
-	public static String BEARER_KEY = "Bearer";
-
 	/**
 	 * Completions endpoint
 	 */
@@ -149,7 +147,7 @@ public class GenericGptAPIServiceActor extends Actor implements HttpClientActor 
 							try {
 								utterance = msg.response.body().string();
 								originalRequest.response = new Gson().fromJson(utterance, LinkedHashMap.class);
-								originalRequest.response.put(BEARER_KEY, bearer);
+								originalRequest.setBearer(bearer);
 								if (originalRequest.accountingRef != null) {
 									originalRequest.accountingRef.tell(originalRequest, self);
 								}
