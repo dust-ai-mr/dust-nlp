@@ -75,9 +75,6 @@ public class ChatGptAPIServiceActor extends GenericGptAPIServiceActor implements
                 originalSender = sender;
                 originalRequest = msg;
 
-				if (null == msg.getKey())
-					log.warn("ChatGptAPIServiceActor: No key - prompt={}", msg.getRequest());
-
 				bearer = (msg.getKey() != null ? msg.getKey() : key);
 
                 Map<String, Object> data = Map.of(
