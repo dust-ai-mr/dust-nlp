@@ -45,6 +45,12 @@ public class ChatGptRequestResponseMsg extends GenericGptRequestResponseMsg
 
     public static final String GPT_4o_latest = "gpt-4o-2024-08-06";
 
+    public static final String CHAT_GPT_4o_MINI = "gpt-4o-mini";
+    public static final String CHAT_GPT_41_MINI = "gpt-4.1-mini";
+    public static final String CHAT_GPT_41_NANO = "gpt-4.1-nano";
+    public static final String CHAT_GPT_4o = "gpt-4o";
+    public static final String CHAT_GPT_41 = "gpt-4.1";
+
     /**
      * Default system prompt
      */
@@ -61,7 +67,7 @@ public class ChatGptRequestResponseMsg extends GenericGptRequestResponseMsg
     public ChatGptRequestResponseMsg(String request) {
         super(request);
         systemPrompt = DEFAULT_SYSTEM_PROMPT;
-        model = GPT_4o;
+        model = CHAT_GPT_41;
     }
     /**
      * Constructor
@@ -71,7 +77,7 @@ public class ChatGptRequestResponseMsg extends GenericGptRequestResponseMsg
     public ChatGptRequestResponseMsg(String request, int maxTokens) {
         super(request, maxTokens);
         systemPrompt = DEFAULT_SYSTEM_PROMPT;
-        model = GPT_4o;
+        model = CHAT_GPT_41;
     }
     /**
      * Constructor
@@ -80,7 +86,7 @@ public class ChatGptRequestResponseMsg extends GenericGptRequestResponseMsg
      */
     public ChatGptRequestResponseMsg(String request, String systemPrompt) {
         super(request, systemPrompt);
-        model = GPT_4o;
+        model = CHAT_GPT_41;
     }
     /**
      * Constructor
@@ -90,7 +96,7 @@ public class ChatGptRequestResponseMsg extends GenericGptRequestResponseMsg
      */
     public ChatGptRequestResponseMsg(String request, String systemPrompt, int maxTokens) {
         super(request, systemPrompt, maxTokens);
-        model = GPT_4o;
+        model = CHAT_GPT_41;
     }
     /**
      * Constructor
