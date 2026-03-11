@@ -71,16 +71,12 @@ public class ResponsesGptStreamingAPIServiceActor extends GenericGptStreamingAPI
                 originalSender = sender;
                 originalRequest = msg;
 
-                if (null == msg.getKey())
-                    log.warn("ResponsesGptStreamingAPIServiceActor: No key - prompt={}", msg.getRequest());
-
                 bearer = (msg.getKey() != null ? msg.getKey() : key);
 
                 Map<String, Object> data = new HashMap<>(
                         Map.of(
                                 "model", msg.getModel(),
                                 "input", msg.getRequest(),
-                                "temperature", msg.getTemperature(),
                                 "max_output_tokens", msg.getMaxTokens(),
                                 "stream", true,
                                 "store", false
@@ -91,13 +87,16 @@ public class ResponsesGptStreamingAPIServiceActor extends GenericGptStreamingAPI
                     data.putAll(msg.options);
                 }
 
+                if (! msg.getModel().startsWith("gpt-5"))
+                    data.put("temperature", msg.getTemperature());
+
                 Request gptRequest = HttpService.buildPostRequest(
                         api,
                         new Gson().toJson(data, LinkedHashMap.class),
                         Map.of(
                                 "Authorization", "Bearer " + bearer,
                                 "Content-Type", "application/json",
-                                "Accept", "application/json"
+                                "Accept", "text/event-stream"
                         )
                 );
 

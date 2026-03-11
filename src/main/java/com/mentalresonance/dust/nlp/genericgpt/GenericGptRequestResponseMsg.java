@@ -73,6 +73,8 @@ public abstract class GenericGptRequestResponseMsg extends GPTMsg // extends Ret
      */
     public LinkedHashMap<Object, Object> response = null;
 
+    public Exception exception = null;
+
     /**
      * Constructor
      */

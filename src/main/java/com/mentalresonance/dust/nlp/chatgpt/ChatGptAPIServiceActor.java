@@ -83,9 +83,11 @@ public class ChatGptAPIServiceActor extends GenericGptAPIServiceActor implements
                                 Map.of("role", "system", "content", msg.getSystemPrompt()),
                                 Map.of("role", "user", "content", msg.getRequest())
                         ),
-                        "temperature", msg.getTemperature(),
                         "max_tokens", msg.getMaxTokens()
                 );
+
+				if (! msg.getModel().startsWith("gpt-5"))
+					data.put("temperature", msg.getTemperature());
 
                 Request gptRequest = HttpService.buildPostRequest(
                         api,

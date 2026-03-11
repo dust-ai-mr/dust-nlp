@@ -22,6 +22,7 @@ package com.mentalresonance.dust.nlp;
 import com.google.gson.Gson;
 import com.mentalresonance.dust.http.msgs.StreamingHttpDataMsg;
 import lombok.extern.slf4j.Slf4j;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,12 +31,13 @@ import java.util.Map;
  * Utilities specifically for ChatGPT
  */
 @Slf4j
-public class ChatGTPUtils {
+public class StreamingChatGTPUtils {
 
+	long last_sequence_number = -1L;
 	/**
 	 * Constructor
 	 */
-	public ChatGTPUtils() {}
+	public StreamingChatGTPUtils() {}
 
 	/**
 	 * With a .data string in a streaming message Chat GPT has its own protocol going on
@@ -45,8 +47,7 @@ public class ChatGTPUtils {
 	 *
 	 * Note that the completions API and the responses API use a different protocol, we deal with this here.
 	 */
-	public static String streamingText(StreamingHttpDataMsg msg) {
-
+	public String streamingText(StreamingHttpDataMsg msg) {
 		String text = null;
 
 		if (!msg.getData().equals("[DONE]")) {
@@ -54,34 +55,39 @@ public class ChatGTPUtils {
 				Gson gson = new Gson();
 				LinkedHashMap<String, Object> m = gson.fromJson(msg.getData(), LinkedHashMap.class);
 				if (m != null) {
-					if (m.containsKey("choices")) { // Completions response
-						List<Map<String, Object>> choices = (List<Map<String, Object>>) m.get("choices");
-						if (choices != null && !choices.isEmpty()) {
-							Map<String, Object> choice = choices.get(0);
-							if (choice.containsKey("delta")) {
-								Map<String, String> delta = (Map<String, String>) choice.get("delta");
-								if (delta != null && delta.containsKey("content")) {
-									String content = delta.get("content");
-									if (content != null) {
-										text = content;
+					long sequence_number = ((Number) m.get("sequence_number")).longValue();
+					if (sequence_number > last_sequence_number) {
+						last_sequence_number = sequence_number;
+
+						if (m.containsKey("choices")) { // Completions response
+							List<Map<String, Object>> choices = (List<Map<String, Object>>) m.get("choices");
+							if (choices != null && !choices.isEmpty()) {
+								Map<String, Object> choice = choices.get(0);
+								if (choice.containsKey("delta")) {
+									Map<String, String> delta = (Map<String, String>) choice.get("delta");
+									if (delta != null && delta.containsKey("content")) {
+										String content = delta.get("content");
+										if (content != null) {
+											text = content;
+										}
 									}
 								}
 							}
 						}
-					}
-					else if (m.containsKey("delta")) {  // Responses response
-						text = m.get("delta").toString();
-						log.info("Sequence_number:{}, text:{}", m.get("sequence_number"), text);
+						else if (m.containsKey("delta")) {  // Responses response
+							text = m.get("delta").toString();
+							log.trace("Sequence_number:{}, text:{}", m.get("sequence_number"), text);
+						}
+						log.info("Event type: {}", m.get("type"));
+						if (text != null)
+							return text;
 					}
 				}
 			} catch (Exception e) {
 				log.error("{} utterance: {}", e.getMessage(), msg.getData());
 			}
 		}
-		if (text != null) {
-			text = text.replaceAll("\n", "<br>");
-		}
-		return text;
+		return null;
 	}
 
 	public static Map<String, Object> streamingUsage(StreamingHttpDataMsg msg) {

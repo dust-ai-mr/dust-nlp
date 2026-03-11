@@ -74,15 +74,11 @@ public class ResponseGptAPIServiceActor extends GenericGptAPIServiceActor implem
                 originalSender = sender;
                 originalRequest = msg;
 
-				if (null == msg.getKey())
-					log.warn("ResponseGptAPIServiceActor: No key - prompt={}", msg.getRequest());
-
 				bearer = (msg.getKey() != null ? msg.getKey() : key);
 
                 Map<String, Object> data = new HashMap(Map.of(
 					"model", msg.getModel(),
 					"input", msg.getRequest(),
-					"temperature", msg.getTemperature(),
 					"max_output_tokens", msg.getMaxTokens(),
 					"store", false
                 ));
@@ -90,6 +86,9 @@ public class ResponseGptAPIServiceActor extends GenericGptAPIServiceActor implem
 				if (msg.options != null) {
 					data.putAll(msg.options);
 				}
+
+				if (! msg.getModel().startsWith("gpt-5"))
+					data.put("temperature", msg.getTemperature());
 
                 Request gptRequest = HttpService.buildPostRequest(
 					api,
@@ -107,7 +106,9 @@ public class ResponseGptAPIServiceActor extends GenericGptAPIServiceActor implem
                 } else {
                     request(rrm);
                 }
-            } else {
+            }
+			else {
+				// Handle response
                 super.createBehavior().onMessage(message);
             }
 		};

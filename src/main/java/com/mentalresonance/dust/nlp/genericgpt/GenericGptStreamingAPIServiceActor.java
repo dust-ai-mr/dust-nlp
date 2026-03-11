@@ -118,7 +118,8 @@ public class GenericGptStreamingAPIServiceActor extends Actor implements HttpCli
 							"prompt",  msg.request,
 							"temperature",  0.0,
 							"max_tokens",  msg.maxTokens,
-							"stream",  true
+							"stream",  true,
+							"stream_options", Map.of("include_usage", true)
 					);
 					Request gptRequest = HttpService.buildPostRequest(
 							api,
@@ -145,11 +146,11 @@ public class GenericGptStreamingAPIServiceActor extends Actor implements HttpCli
 					}
 					break;
 
-				case StreamingHttpEndMsg ignored:
+				case StreamingHttpEndMsg msg:
 					if (null != eventSource) {
 						eventSource.cancel();
 					}
-					originalSender.tell(message, self);
+					originalSender.tell(msg, self);
 					stopSelf();
 					break;
 
@@ -162,6 +163,7 @@ public class GenericGptStreamingAPIServiceActor extends Actor implements HttpCli
 					break;
 
 				case StreamingHttpDataMsg msg:
+					originalSender.tell(msg, parent);
 					break;
 
 				default: log.error("Got unexpected message '{}'", message);

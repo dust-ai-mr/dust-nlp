@@ -42,7 +42,6 @@ public class GenericGptAPIServiceActor extends Actor implements HttpClientActor 
 	 */
 	protected String api;
 
-	Integer retries = 3;
 	/**
 	 * Optional throttler
 	 */
@@ -134,13 +133,8 @@ public class GenericGptAPIServiceActor extends Actor implements HttpClientActor 
 					}
 					else {
 						if (msg.exception != null) {
-							if (-- retries > 0) {
-								self.tell(originalRequest, originalSender);
-							}
-							else {
-								log.warn("Request {} failed: {}", originalRequest, msg.exception.getMessage());
-								stopSelf();
-							}
+							originalRequest.exception = msg.exception;
+							log.warn("Request {} failed: {}", originalRequest, msg.exception.getMessage());
 						}
 						else {
 							String utterance = "Unknown";
